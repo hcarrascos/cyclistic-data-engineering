@@ -52,26 +52,46 @@ The Bronze layer contains approximately **5.9 million trip records**.
 ```text
 cyclistic-data-engineering/
 │
-├── setup/              # Database and schema setup
+├── setup/                         # Database and schema setup
 │
 ├── sql/
-│   ├── bronze/         # Raw layer
-│   ├── silver/         # Cleaning and transformation
-│   └── gold/           # Analytics layer
+│   ├── bronze/                    # Raw layer
+│   │
+│   ├── silver/
+│   │   └── 01_create_silver_table.sql
+│   │
+│   └── gold/                      # Analytics layer
 │
-├── tests/              # Data quality tests
-├── docs/               # Project documentation
+├── tests/
+│   └── 01_validate_silver.sql     # Silver data validation
+│
+├── docs/                          # Project documentation
 └── README.md
 ```
 
-## Project Status
+## Silver Layer
 
-**In progress**
+The Silver layer transforms the raw trip data from `raw.cyclistic_trips` into a cleaned and enriched `staging.cyclistic_trips` table.
+
+The transformation currently:
+
+* Removes records with missing start or end timestamps.
+* Removes trips where the end timestamp is not later than the start timestamp.
+* Deduplicates records based on `ride_id`.
+* Calculates ride duration in minutes.
+* Derives the day of the week from the trip start timestamp.
+* Selects the fields required for downstream processing.
+
+A separate validation script is used to verify the resulting Silver dataset before moving to the Gold layer.
+
+## Project Status
 
 * [x] Database and schemas created
 * [x] Bronze table created
 * [x] 12 monthly CSV files ingested
-* [ ] Silver layer
-* [ ] Data quality tests
+* [x] Silver layer created
+* [x] Silver validation implemented
 * [ ] Gold layer
 * [ ] Final documentation
+
+**Current stage:** Gold layer development
