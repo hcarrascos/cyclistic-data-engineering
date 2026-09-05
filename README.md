@@ -2,96 +2,134 @@
 
 ## Overview
 
-This project implements a data engineering pipeline using the **Cyclistic bike-share dataset** and the **Medallion Architecture**.
+This project implements an end-to-end data pipeline using the **Medallion Architecture** to process and transform Cyclistic bike-share trip data.
 
-The goal is to transform 12 months of raw trip data into clean and analytics-ready datasets through three layers:
+The pipeline processes 12 months of historical trip data using PostgreSQL and SQL, progressively transforming raw data into clean, analytics-ready datasets.
 
-* **Bronze (`raw`)** – ingestion and storage of source data.
-* **Silver (`staging`)** – data cleaning, validation, and transformation.
-* **Gold (`analytics`)** – analytics-ready datasets.
+The project was designed around the following business question:
 
-The project is being developed as a practical implementation of core data engineering concepts, including data ingestion, transformation, data quality, database design, and version control.
+> **Do members and casual riders use Cyclistic bikes differently?**
+
+---
 
 ## Architecture
 
 ```text
-Cyclistic CSV Files
-        │
-        ▼
-   Bronze / Raw
-        │
-        ▼
- Silver / Staging
-        │
-        ▼
- Gold / Analytics
+Raw CSV Files
+      ↓
+Bronze (raw)
+      ↓
+Silver (staging)
+      ↓
+Gold (analytics)
 ```
+
+### Bronze Layer
+
+Raw trip data from 12 monthly CSV files is loaded into:
+
+`raw.cyclistic_trips`
+
+The Bronze layer preserves the source data while adding ingestion metadata.
+
+### Silver Layer
+
+The Silver transformation creates:
+
+`staging.cyclistic_trips`
+
+The transformation:
+
+- removes records with invalid timestamps
+- removes duplicate `ride_id` values
+- removes rides where `ended_at <= started_at`
+- calculates ride duration in minutes
+- derives the day of the week
+- selects fields required for downstream analytics
+
+Validation queries are stored separately under `/tests`.
+
+### Gold Layer
+
+The Gold layer aggregates the cleaned Silver data into analytics-ready tables designed to answer the project's business question.
+
+`analytics.cyclistic_rides_summary`
+
+Summarizes rider behavior by membership type and day of the week, including total rides and average ride duration.
+
+`analytics.cyclistic_ride_type_summary`
+
+Summarizes rider behavior by membership type and bike type, including total rides and average ride duration.
+
+---
+
+## Key Findings
+
+The Gold layer reveals clear differences between member and casual rider behavior. Casual riders take longer trips on average, while member rides are shorter and more consistent throughout the week. Member activity is highest during weekdays, while casual ridership increases on weekends. The largest difference in ride duration occurs with classic bikes, where casual riders average **39.6 minutes** per trip compared with **15.2 minutes** for members.
+
+---
 
 ## Dataset
 
-The project uses **12 months of Cyclistic/Divvy bike-share trip data**, covering **July 2025 to June 2026**.
+The dataset contains 12 months of Cyclistic bike-share trip data:
 
-The source data is provided as monthly CSV files containing trip information such as ride type, timestamps, stations, geographic coordinates, and membership type.
+**July 2025 – June 2026**
 
-The Bronze layer contains approximately **5.9 million trip records**.
+Approximately **5.9 million trip records** were loaded into the Bronze layer.
 
-## Tools
+Source: Divvy/Cyclistic public trip data.
 
-| Tool              | Purpose                              |
-| ----------------- | ------------------------------------ |
-| PostgreSQL        | Data storage and transformation      |
-| SQL               | Data manipulation and transformation |
-| DBeaver           | Database management and development  |
-| PostgreSQL `psql` | Command-line data ingestion          |
-| VS Code           | Development environment              |
-| Git               | Version control                      |
-| GitHub            | Repository hosting and documentation |
+---
+
+## Technologies
+
+| Technology | Purpose |
+|---|---|
+| PostgreSQL | Database and data processing |
+| SQL | Data transformation and aggregation |
+| DBeaver | Database management |
+| psql | Bulk CSV ingestion |
+| VS Code | Development |
+| Git | Version control |
+| GitHub | Repository hosting |
+
+---
 
 ## Repository Structure
 
 ```text
 cyclistic-data-engineering/
 │
-├── setup/                         # Database and schema setup
+├── setup/
+│   ├── 01_create_database.sql
+│   └── 02_create_schemas.sql
 │
 ├── sql/
-│   ├── bronze/                    # Raw layer
-│   │
+│   ├── bronze/
+│   │   └── 01_create_bronze_table.sql
 │   ├── silver/
 │   │   └── 01_create_silver_table.sql
-│   │
-│   └── gold/                      # Analytics layer
+│   └── gold/
+│       ├── 01_create_rides_summary.sql
+│       └── 02_create_ride_type_summary.sql
 │
 ├── tests/
-│   └── 01_validate_silver.sql     # Silver data validation
+│   ├── 01_validate_silver.sql
+│   └── 02_validate_gold.sql
 │
-├── docs/                          # Project documentation
 └── README.md
 ```
 
-## Silver Layer
+---
 
-The Silver layer transforms the raw trip data from `raw.cyclistic_trips` into a cleaned and enriched `staging.cyclistic_trips` table.
+## Pipeline Status
 
-The transformation currently:
-
-* Removes records with missing start or end timestamps.
-* Removes trips where the end timestamp is not later than the start timestamp.
-* Deduplicates records based on `ride_id`.
-* Calculates ride duration in minutes.
-* Derives the day of the week from the trip start timestamp.
-* Selects the fields required for downstream processing.
-
-A separate validation script is used to verify the resulting Silver dataset before moving to the Gold layer.
-
-## Project Status
-
-* [x] Database and schemas created
-* [x] Bronze table created
-* [x] 12 monthly CSV files ingested
-* [x] Silver layer created
-* [x] Silver validation implemented
-* [ ] Gold layer
-* [ ] Final documentation
-
-**Current stage:** Gold layer development
+- [x] Database and schemas created
+- [x] Bronze table created
+- [x] 12 monthly CSV files ingested
+- [x] Silver transformation completed
+- [x] Silver layer validated
+- [x] Gold analytics tables created
+- [x] Gold layer validated
+- [x] Business question evaluated
+- [x] Project documentation completed
